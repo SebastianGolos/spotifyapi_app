@@ -33,12 +33,13 @@ class SpotifyAPI(object):
     def get_token_headers(self):
         client_creds_b64 = self.get_client_credentials()
         return {
-            "Authorization": f"Basic {client_creds_b64}"
+            "Authorization": f"Basic {client_creds_b64}",
         }
 
     def get_token_data(self):
         return {
-            "grant_type": "client_credentials"
+            "grant_type": "client_credentials",  
+            "scope": "user-top-read user-follow-read"          
         }
 
     def perform_auth(self):
@@ -47,6 +48,8 @@ class SpotifyAPI(object):
         token_headers = self.get_token_headers()
 
         r = requests.post(token_url, data=token_data, headers=token_headers)
+
+        # print(r.json())
 
         if r.status_code not in range(200, 299):
             return Exception("Could not autheticate.")
@@ -103,7 +106,7 @@ class SpotifyAPI(object):
     def get_resource_header(self):
         access_token = self.get_access_token()
         headers = {
-            "Authorization": f"Bearer {access_token}"
+            "Authorization": f"Bearer {access_token}",
         }
         return headers
 
@@ -112,7 +115,7 @@ class SpotifyAPI(object):
         headers = self.get_resource_header()
         r = requests.get(endpoint, headers=headers)
         if r.status_code not in range(200, 299):
-            return r.json()
+            return {}
         return r.json()
     
     def get_album(self, _id):
@@ -120,4 +123,47 @@ class SpotifyAPI(object):
     
     def get_artist(self, _id):
         return self.get_resource(_id, resource_type='artists')
+
+    def get_track(self, _id):
+        endpoint = f"https://api.spotify.com/v1/audio-features/{_id}"
+        headers = self.get_resource_header()
+        
+        r = requests.get(endpoint, headers=headers)
+        if r.status_code not in range(200, 299):
+            return {}
+        
+        return r.json()
+    
+    # def get_recommendations(self, instrumentalness, key, liveness, loundness, mode, speechiness, tempo, time_signature, valence):
+    def get_recommendations(self, market, tracks):
+        headers = self.get_resource_header()
+        query_params = urlencode({"market": market, "seed_tracks":tracks})
+        endpoint = f"https://api.spotify.com/v1/recommendations?{query_params}"
+        
+        r = requests.get(endpoint, headers=headers)
+        if r.status_code not in range(200, 299):
+            return {}
+
+        
+        return r.json()
+
+    #Two functions below currently require manual input of bearer keys from web app interface
+    def get_client_top_artists(self):
+        endpoint = "https://api.spotify.com/v1/me/top/artists?time_range=medium_term&limit=10&offset=5"
+        headers = self.get_resource_header()
+        r = requests.get(endpoint, headers=headers)
+        if r.status_code not in range(200, 299):
+            print(r.status_code)
+            
+            return {}
+        return r.json()
+
+    def get_client_top_tracks(self):
+        endpoint = "https://api.spotify.com/v1/me/top/tracks?time_range=medium_term&limit=10&offset=5"
+        headers = self.get_resource_header()
+        r = requests.get(endpoint, headers=headers)
+        if r.status_code not in range(200, 299):
+            print(r.status_code)
+            return {}
+        return r.json()
     
